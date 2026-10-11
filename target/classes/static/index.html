@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student Attendance Management</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#182230;background:#f4f7fb}body{margin:0}header{background:#153e75;color:white;padding:24px max(20px,calc((100% - 1050px)/2))}main{max-width:1050px;margin:24px auto;padding:0 16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}.card{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 10px #12213b12}h1{margin:0 0 8px}h2{margin-top:0;font-size:19px}label{display:block;margin:10px 0 5px;font-size:14px}input,select{box-sizing:border-box;width:100%;padding:10px;border:1px solid #ccd5e0;border-radius:7px}button{background:#1769aa;color:white;border:0;padding:10px 14px;border-radius:7px;cursor:pointer;margin-top:12px}button:hover{background:#0d4e83}.muted{color:#5d6b7d;font-size:14px}.notice{margin:12px 0;padding:10px;border-radius:7px;background:#e9f5ff}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;padding:10px;border-bottom:1px solid #e2e8f0}th{background:#f5f8fc}#message{min-height:20px;color:#135b31}
+</style></head><body>
+<header><h1>Student Attendance Management System</h1><div>Register students, mark daily attendance, and review records.</div></header>
+<main><p id="message" role="status"></p><div class="grid">
+<section class="card"><h2>Add student</h2><form id="studentForm">
+<label>Roll number</label><input name="rollNumber" required>
+<label>Full name</label><input name="fullName" required>
+<label>Department</label><input name="department">
+<label>Year of study</label><input name="yearOfStudy" placeholder="e.g. 2">
+<label>Email</label><input name="email" type="email">
+<button type="submit">Save student</button></form></section>
+<section class="card"><h2>Mark attendance</h2><form id="attendanceForm">
+<label>Student</label><select name="studentId" id="studentSelect" required><option value="">Load students first</option></select>
+<label>Date</label><input name="attendanceDate" id="attendanceDate" type="date" required>
+<label>Status</label><select name="status"><option>PRESENT</option><option>ABSENT</option><option>LATE</option><option>ON_LEAVE</option></select>
+<label>Subject / class (optional)</label><input name="subject">
+<button type="submit">Mark attendance</button></form></section></div>
+<section class="card" style="margin-top:18px"><h2>Students</h2><button id="reloadStudents" type="button">Refresh students</button><div class="tablewrap"><table><thead><tr><th>Roll no.</th><th>Name</th><th>Department</th><th>Year</th><th>Email</th></tr></thead><tbody id="studentsBody"></tbody></table></div></section>
+<section class="card" style="margin-top:18px"><h2>Attendance records</h2><label>Filter by date</label><input type="date" id="filterDate"><button id="loadRecords" type="button">Load records</button><div class="tablewrap"><table><thead><tr><th>Date</th><th>Roll no.</th><th>Student</th><th>Status</th><th>Subject</th></tr></thead><tbody id="recordsBody"></tbody></table></div></section>
+<section class="card" style="margin-top:18px"><h2>Attendance summary</h2><label>Student</label><select id="summaryStudent"><option value="">Select a student</option></select><button id="loadSummary" type="button">View summary</button><div id="summary" class="notice muted">Select a student to view the summary.</div></section>
+<p class="muted">Academic demonstration project. Add authentication and authorization before deploying with real student data.</p>
+</main><script>
+const $=s=>document.querySelector(s), msg=t=>$('#message').textContent=t;
+async function api(url,opts={}){const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});if(!r.ok){let t=await r.text();throw new Error(t||`Request failed (${r.status})`)}if(r.status===204)return null;return r.json()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function loadStudents(){const data=await api('/api/students');$('#studentsBody').innerHTML=data.map(s=>`<tr><td>${esc(s.rollNumber)}</td><td>${esc(s.fullName)}</td><td>${esc(s.department)}</td><td>${esc(s.yearOfStudy)}</td><td>${esc(s.email)}</td></tr>`).join('');const options='<option value="">Select a student</option>'+data.map(s=>`<option value="${s.id}">${esc(s.rollNumber)} — ${esc(s.fullName)}</option>`).join('');$('#studentSelect').innerHTML=options;$('#summaryStudent').innerHTML=options}
+async function loadRecords(){const d=$('#filterDate').value;const data=await api('/api/attendance'+(d?'?date='+encodeURIComponent(d):''));$('#recordsBody').innerHTML=data.map(a=>`<tr><td>${esc(a.attendanceDate)}</td><td>${esc(a.student?.rollNumber)}</td><td>${esc(a.student?.fullName)}</td><td>${esc(a.status)}</td><td>${esc(a.subject)}</td></tr>`).join('')}
+$('#studentForm').addEventListener('submit',async e=>{e.preventDefault();const o=Object.fromEntries(new FormData(e.target));try{await api('/api/students',{method:'POST',body:JSON.stringify(o)});msg('Student saved successfully.');e.target.reset();await loadStudents()}catch(err){msg('Could not save student: '+err.message)}});
+$('#attendanceForm').addEventListener('submit',async e=>{e.preventDefault();const o=Object.fromEntries(new FormData(e.target));o.studentId=Number(o.studentId);try{await api('/api/attendance',{method:'POST',body:JSON.stringify(o)});msg('Attendance marked successfully.');await loadRecords()}catch(err){msg('Could not mark attendance: '+err.message)}});
+$('#reloadStudents').onclick=()=>loadStudents().catch(e=>msg(e.message));$('#loadRecords').onclick=()=>loadRecords().catch(e=>msg(e.message));
+$('#loadSummary').onclick=async()=>{const id=$('#summaryStudent').value;if(!id){msg('Select a student first.');return}try{const s=await api('/api/attendance/summary/'+id);$('#summary').textContent=`Present: ${s.present} | Absent: ${s.absent} | Late: ${s.late} | On leave: ${s.onLeave} | Total: ${s.totalMarked} | Present percentage: ${s.attendancePercentage}%`}catch(e){msg(e.message)}};
+$('#attendanceDate').value=new Date().toISOString().slice(0,10);loadStudents().then(loadRecords).catch(e=>msg('Connect to the database and restart the app. '+e.message));
+</script></body></html>

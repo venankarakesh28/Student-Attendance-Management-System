@@ -1,0 +1,7 @@
+flowchart LR
+    S[Student / Faculty / Admin] --> UI[Web UI<br/>HTML + CSS + JavaScript]
+    UI --> API[Spring Boot REST Controllers]
+    API --> LOGIC[Validation + Application Logic]
+    LOGIC --> JPA[Spring Data JPA / Hibernate]
+    JPA --> DB[(MySQL Database)]
+    DB --> JPA --> API --> UI

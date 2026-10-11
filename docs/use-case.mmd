@@ -1,0 +1,11 @@
+flowchart TD
+    Student[Student] --> View[View attendance summary]
+    Faculty[Faculty] --> Add[Register student]
+    Faculty --> Mark[Mark / update attendance]
+    Admin[Administrator] --> Manage[Manage student records]
+    Admin --> Report[Review attendance records and summaries]
+    Add --> DB[(Attendance Database)]
+    Mark --> DB
+    View --> DB
+    Manage --> DB
+    Report --> DB

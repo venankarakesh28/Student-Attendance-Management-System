@@ -1,0 +1,9 @@
+com\college\attendance\repository\StudentRepository.class
+com\college\attendance\model\AttendanceStatus.class
+com\college\attendance\model\Student.class
+com\college\attendance\AttendanceManagementApplication.class
+com\college\attendance\model\AttendanceRecord.class
+com\college\attendance\repository\AttendanceRepository.class
+com\college\attendance\controller\AttendanceController$AttendanceRequest.class
+com\college\attendance\controller\AttendanceController.class
+com\college\attendance\controller\StudentController.class
